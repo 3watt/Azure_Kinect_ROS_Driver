@@ -56,6 +56,7 @@ Licensed under the MIT License.
     <arg name="depth_topic"        value="/k4a/depth/image_rect" />
     <arg name="camera_info_topic"  value="/k4a/depth/camera_info" />
     <arg name="approx_sync"        value="false" />
+    <arg name="rgbd_sync"          value="true" />
     <arg name="frame_id"           value="camera_base" />
     <arg name="args"               value="--delete_db_on_start --Odom/ResetCountdown 2" />
   </include>
