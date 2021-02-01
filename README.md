@@ -1,5 +1,37 @@
 # Azure Kinect ROS Driver
 
+###설치
+
+- git clone 을 해주어야 한다. [Azure-Kinect-Sensor-SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK) 와 [Azure_kinect_ros_driver](https://github.com/microsoft/Azure_Kinect_ROS_Driver)
+
+이후, catkin make 를 하면, k4a가 없다는 에러가 뜰 것이다. 그냥 sudo apt get install 을 하면, k4a 가 나오지 않을 것이다!! 
+sudo get install 에서 k4a pkg 를 불러오려면 아래의 과정을 해주어야 한다.
+```
+curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+sudo apt-add-repository https://packages.microsoft.com/ubuntu/18.04/prod
+sudo apt-get update
+
+```
+그 이후에, 아래의 lib 를 설치해주면 된다.
+```
+sudo apt-get install k4a-tools
+sudo apt-get install libk4a1.3
+sudo apt-get install libk4a1.3-dev 
+```
+
+그리고, Azure-Kinect-Sensor-SDK/scripts 에 있는 rules 파일을 /etc/udev/rules.d/로  cp 해주자!
+
+```
+ cp ~/catkin_ws/src/Azure-Kinect-Sensor-SDK/scripts/99-k4a.rules /etc/udev/rules.d/
+ 
+```
+그런다음, 카메라를 전원선과 C_type_usb선 두개 모두 꽂아서 사용하면 된다!! 둘 중 하나라도 꽂아 있지 않으면,
+Failed to open a K4A device. Cannot continue.
+에러가 발생 한다.
+
+
+
+
 This project is a node which publishes sensor data from the [Azure Kinect Developer Kit](https://azure.microsoft.com/en-us/services/kinect-dk/) to the [Robot Operating System (ROS)](http://www.ros.org/). Developers working with ROS can use this node to connect an Azure Kinect Developer Kit to an existing ROS installation.
 
 This repository uses the [Azure Kinect Sensor SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK) to communicate with the Azure Kinect DK. It supports both Linux and Windows installations of ROS.
