@@ -1,6 +1,6 @@
 # Azure Kinect ROS Driver
 
-##설치
+## 설치
 
 - git clone 을 해주어야 한다. [Azure-Kinect-Sensor-SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK) 와 [Azure_kinect_ros_driver](https://github.com/microsoft/Azure_Kinect_ROS_Driver)
 
@@ -28,7 +28,7 @@ sudo apt-get install libk4a1.3-dev
 그런다음, 카메라를 전원선과 C_type_usb선 두개 모두 꽂아서 사용하면 된다!! 둘 중 하나라도 꽂아 있지 않으면,
 Failed to open a K4A device. Cannot continue.
 에러가 발생 한다.
-
+## 
 
 
 
