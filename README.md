@@ -15,7 +15,6 @@ sudo apt-get update
 그 이후에, 아래의 lib 를 설치해주면 된다.
 ```
 sudo apt-get install k4a-tools
-sudo apt-get install libk4a1.3
 sudo apt-get install libk4a1.3-dev 
 ```
 
