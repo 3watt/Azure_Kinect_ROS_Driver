@@ -25,8 +25,7 @@ import time
 
 def main():
 
-	# 토픽으로 이미지 확인 할 수 있게 확인 차... 던져야 하는 토픽은 추후에 보완할 예정..
-	# 예를 들면, 층, 호수 정보를 csv 파일이 아닌, topic 으로 던져라 라던가..
+	# 토픽으로 층, 호수 정보 publish
 	# pub = rospy.Publisher("image_topic_2",Image, queue_size=10)
 	floor_pub = rospy.Publisher("/floor_num", Int16, queue_size=1)
 	room_pub = rospy.Publisher("/room_num", Int16, queue_size=1)
@@ -149,6 +148,5 @@ def main():
 if __name__ == '__main__':
     try:
         start = main()
-        # rospy.spin() 
     except Exception: 
 		pass
