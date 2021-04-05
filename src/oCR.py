@@ -30,7 +30,7 @@ import time
 # bridge 는 Opencv 와 ROS 의 연결을 위해 필요한것이다.
 
 bridge = CvBridge()
-video_capture1 = cv2.VideoCapture(4)
+video_capture1 = cv2.VideoCapture(0)
 
 
 # Opencv 로 받아온 윤곽의 point 를 rect 배열로 변환시켜준다.
@@ -64,8 +64,15 @@ def main():
 
 	# 토픽으로 이미지 확인 할 수 있게 확인 차... 던져야 하는 토픽은 추후에 보완할 예정..
 	# 예를 들면, 층, 호수 정보를 csv 파일이 아닌, topic 으로 던져라 라던가..
-	pub = rospy.Publisher("image_topic_2",Image, queue_size=10)
-	rospy.init_node('image_publisher', anonymous=True)
+	# pub = rospy.Publisher("image_topic_2",Image, queue_size=10)
+	floor_pub = rospy.Publisher("/floor_num", Int16, queue_size=1)
+	room_pub = rospy.Publisher("/room_num", Int16, queue_size=1)
+
+	floor_num = Int16()
+	room_num = Int16()
+
+	rospy.init_node('floor_and_room_publisher', anonymous=True)
+	rate = rospy.Rate(10)
 
 
 	while(True):
@@ -98,9 +105,9 @@ def main():
 				contourSize = cv2.contourArea(approx)
 				paperSize = 200 # 21.0 * 29.7
 				ratio = contourSize / paperSize
-				print(contourSize)
-				print(paperSize)
-				print(ratio)
+				# print(contourSize)
+				# print(paperSize)
+				# print(ratio)
 
 				if ratio > 200 : 
 					screenCnt = approx
@@ -133,6 +140,8 @@ def main():
 
 			N = cv2.getPerspectiveTransform(rect, dst)
 			varped = cv2.warpPerspective(frame, N, (maxWidth, maxHeight))
+			result_im = cv2.resize(varped, (1200,1000))
+
 
 			print("apply perspective transform.")
 
@@ -144,14 +153,13 @@ def main():
 	video_capture1.release()
 	cv2.destroyAllWindows()
 
-	cv2.imshow("scan data" ,varped)
-	cv2.imwrite('/home/jaewon/catkin_ws/src/scan.png', varped)
-	print("watt!~")
+	cv2.imshow("scan data" ,result_im)
+	cv2.imwrite('/home/minhye/catkin_ws/src/scan.png',result_im)
 	cv2.waitKey(0)
 	cv2.destroyAllWindows()
 
 	# 카메라로 촬영한 사진 열기.
-	with open("/home/jaewon/catkin_ws/src/scan.png", "rb") as f:
+	with open("/home/minhye/catkin_ws/src/scan.png", "rb") as f:
 	    img = base64.b64encode(f.read())
 
 
@@ -184,11 +192,11 @@ def main():
 	res = json.loads(response.text)
 
 	# 추출된 json data 를 파일로 만들어준다.(주의)ensure_ascii = false 라고 해주지 않으면, 한글이 깨진다.
-	with io.open('/home/jaewon/catkin_ws/src/1.json', 'w') as make_file:
+	with io.open('/home/minhye/catkin_ws/src/1.json', 'w') as make_file:
 	    json.dump(response.text, make_file, ensure_ascii=False, indent=2)
 
 	# json 파일을 열고, OCR 된 text-data 들을 list 로 추출한다.
-	with io.open('/home/jaewon/catkin_ws/src/1.json','r') as f:
+	with io.open('/home/minhye/catkin_ws/src/1.json','r') as f:
 	    json_data = json.load(f)
 
 	# 한글 데이터를 불러오기 위해 encoding= utf-8 을 해주었다.
@@ -211,12 +219,14 @@ def main():
 	resultlist = []
 	resultlist_ = []
 
+	floor = None 
+	room = None
+
 	for row in list_arr:
 
 		if "동" in row and "호" in row:
 			apt_room = [int(d) for d in re.findall(r'-?\d+', row)]
 			resultlist.append(apt_room)
-			print("watt")
 
 			# 층, 호수 구분
 			b_room_split = str(apt_room[1]).split('0')
@@ -235,8 +245,6 @@ def main():
 				
 		elif "호" in row:
 			if row[0].isdigit() :
-				print("watt_")
-
 				room_ = filter(str.isdigit,row)
 				resultlist.append(room_)
 
@@ -246,7 +254,28 @@ def main():
 				room = room_split[1]
 				resultlist_.append(floor)
 				resultlist_.append(room)
+
+				# topic publish
+				floor_num.data = int(floor)
+				room_num.data = int(room)
+				
+				while not rospy.is_shutdown():
+					
+					floor_connections = floor_pub.get_num_connections()
+					room_connections = room_pub.get_num_connections()
+
+					if floor_connections > 0 :
+						floor_pub.publish(floor_num)
+						if room_connections > 0 :
+							room_pub.publish(room_num)
+							break
+
+        			rate.sleep()
+					
+
+ 
 				room_num = list_arr.index(row)
+
 
 	    # '-' 의 경우 송장에서 쓰이는 경우가 너무 많아 특별한 제약을 걸지 않는 한 쓸 수 없을 듯 하다.
 	    # elif "-" in row:
@@ -256,14 +285,16 @@ def main():
 
 
 	# 아파트의 동, 호수 정보를 숫자로만 저장한다.
-	with open('/home/jaewon/catkin_ws/src/2.csv', 'w') as f:
+	with open('/home/minhye/catkin_ws/src/2.csv', 'w') as f:
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist)
 
 	# 집의 층과 호수 정보만을 따로 추출해서 저장한다.
-	with open('/home/jaewon/catkin_ws/src/3.csv', 'w') as f:
+	with open('/home/minhye/catkin_ws/src/3.csv', 'w') as f:
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist_)
+
+
 
 
 if __name__ == '__main__':
@@ -275,5 +306,3 @@ if __name__ == '__main__':
         print
     except Exception: 
 		pass
-
-
