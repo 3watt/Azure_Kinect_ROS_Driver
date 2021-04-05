@@ -49,11 +49,10 @@ def order_points(pts):
 def OpenVideo():
 	Test = False
 	if video_capture1.isOpened():
-		print 'it is opened successfully!'
 		Test = True
 	else:
-		print 'cannot open it!'
-
+		print("camera error!! TT")
+	
 	return Test
 
 
@@ -89,37 +88,27 @@ def main():
 		gray = cv2.GaussianBlur(gray, (3,3), 0)
 		edged = cv2.Canny(gray, 75, 200)
 
-		print("Edge Detection start")
-
-
 		(_,cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 		cnts = sorted(cnts, key = cv2.contourArea, reverse=True)
 
 		for c in cnts:
 			peri = cv2.arcLength(c, True)
 			approx = cv2.approxPolyDP(c, 0.02* peri, True)
-			# print("approx :")
-			# print(approx)
 			screenCnt = []
 
 			if len(approx) == 4:
 				contourSize = cv2.contourArea(approx)
 				paperSize = 200 # 21.0 * 29.7
 				ratio = contourSize / paperSize
-				# print(contourSize)
-				# print(paperSize)
-				# print(ratio)
 
 				if ratio > 200 : 
 					screenCnt = approx
 				break
 
 		if len(screenCnt) == 0:
-			print("fail to get edge")
 			cv2.imshow("Frame", frame)
 			continue
 		else:
-			print("show contour of paper")
 			cv2.waitKey(1000)
 
 			cv2.drawContours(frame, [screenCnt], -1, (0, 255, 0), 2)
@@ -143,18 +132,11 @@ def main():
 			varped = cv2.warpPerspective(frame, N, (maxWidth, maxHeight))
 			result_im = cv2.resize(varped, (1200,1000))
 
-
-			print("apply perspective transform.")
-
-			# varped = cv2.cvtColor(varped, cv2.COLOR_BGR2GRAY)
-			# varped = cv2.adaptiveThreshold(varped, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21, 10)
-
 			break
 	
 	video_capture1.release()
 	cv2.destroyAllWindows()
 
-	# cv2.imshow("scan data" ,result_im)
 	cv2.imwrite('/home/minhye/catkin_ws/src/scan.png',result_im)
 	cv2.waitKey(0)
 	cv2.destroyAllWindows()
@@ -224,7 +206,6 @@ def main():
 	room_split = ['0','0','0','0']
 	floor = None 
 	room = None
-
 	for row in list_arr:
 
 		if "호" in row:
@@ -252,68 +233,8 @@ def main():
 						print("This parcel is not on our service!!")
 
 
-				# 층, 호수 구분
-				# 10 층 이상과 이하의 경우를 따로 나누어 계산한다.
-				if len(room_) == 3 : 
-					for i in range(3) :
-						room_split[i+1] = str(room_[i])
-				elif len(room_) == 4 :
-					for i in range(4) :
-						room_split[i] = str(room_[i])
-
-				floor = int(room_split[0] + room_split[1])
-				room = int(room_split[2] + room_split[3])
-
-				# topic publish
-				floor_num.data = int(floor)
-				room_num.data = int(room)
-				
-				while not rospy.is_shutdown():
-					
-					floor_connections = floor_pub.get_num_connections()
-					room_connections = room_pub.get_num_connections()
-
-					if floor_connections > 0 :
-						floor_pub.publish(floor_num)
-						if room_connections > 0 :
-							room_pub.publish(room_num)
-							break
-
-        			rate.sleep()
-					
-
-	    # '-' 의 경우 송장에서 쓰이는 경우가 너무 많아 특별한 제약을 걸지 않는 한 쓸 수 없을 듯 하다.
-	    # elif "-" in row:
-	    #     if row[0].isdigit() :
-	    #         resultlist.append(row)
-		# 추출한 숫자가 row 의 몇번째에 있는지 알고 싶을 때...
-	    #         apt_num = list_arr.index(row)
-
-	##########################################################
-	##########################################################
-	# 사용환경에 따라, 저장 하는 주소 바꿔주기!!!!!!
-	##########################################################
-	##########################################################
-
-	# 아파트의 동, 호수 정보를 숫자로만 저장한다.
-	with open('/home/minhye/catkin_ws/src/2.csv', 'w') as f:
-	    writer = csv.writer(f)
-	    writer.writerow(resultlist)
-
-	# 집의 층과 호수 정보만을 따로 추출해서 저장한다.
-	with open('/home/minhye/catkin_ws/src/3.csv', 'w') as f:
-	    writer = csv.writer(f)
-	    writer.writerow(resultlist_)
-
-
-
-
 if __name__ == '__main__':
     try:
         start = main()
-        # rospy.spin() 
-        print 
-        print "over!! :)"
-        print
     except Exception: 
 		pass
