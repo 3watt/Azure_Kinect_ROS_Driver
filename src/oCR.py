@@ -21,6 +21,17 @@ import geometry_msgs.msg
 
 import time
 
+######################################################################
+######################################################################
+# By using this node!
+## as a trigger.
+### rostopic pub wstation/lift_item_size std_msgs/String "data: 'good'"
+## as a connection.
+### rostopic echo /room_num
+### rostopic echo /floor_num
+######################################################################
+######################################################################
+
 ### 본 script 는 Azure Kinect 를 이용하여, 운송장을 촬영하고,
 ### 촬영한 운송장을 네이버 OCR API 를 호출하여, 기능을 수행한 후,
 ### 아파트의 동, 호수 정보를 parsing 하는 script 이다.
