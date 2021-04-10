@@ -12,7 +12,7 @@ import rospy
 import cv2
 import numpy as np
 
-from std_msgs.msg import Byte, Bool, Int16, String
+from std_msgs.msg import Byte, Bool, Int16, String, Int8MultiArray
 from sensor_msgs.msg import Image, CameraInfo, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Pose, Point
@@ -28,10 +28,8 @@ import time
 
 # Azure Kinect 경우 웹캠이 있는 노트북으로 사용할 때에는, 4번으로 설정해주어야한다. 컴퓨터의 경우 0 번을 해주면 된다.
 # bridge 는 Opencv 와 ROS 의 연결을 위해 필요한것이다.
-
-bridge = CvBridge()
-video_capture1 = cv2.VideoCapture(0)
-
+# bridge = CvBridge()
+# video_capture1 = cv2.VideoCapture(0)
 
 # Opencv 로 받아온 윤곽의 point 를 rect 배열로 변환시켜준다.
 def order_points(pts):
@@ -61,7 +59,7 @@ def OpenVideo():
 def main():
 
 	# 카메라 ON
-	Test = OpenVideo()
+	# Test = OpenVideo()
 	
 	# 토픽으로 층, 호수 정보 publish
 	# pub = rospy.Publisher("image_topic_2",Image, queue_size=10)
@@ -71,7 +69,7 @@ def main():
 	floor_num = Int16()
 	room_num = Int16()
 
-	rospy.init_node('floor_and_room_publisher', anonymous=True)
+	# rospy.init_node('floor_and_room_publisher', anonymous=True)
 	rate = rospy.Rate(10)
 
 
@@ -124,7 +122,7 @@ def main():
 			cv2.drawContours(frame, [screenCnt], -1, (0, 255, 0), 2)
 			cv2.imshow("Frame", frame)
 
-			cv2.waitKey(50)
+			# cv2.waitKey(50)
 
 
 			rect = order_points(screenCnt.reshape(4, 2))
@@ -147,21 +145,23 @@ def main():
 
 			# varped = cv2.cvtColor(varped, cv2.COLOR_BGR2GRAY)
 			# varped = cv2.adaptiveThreshold(varped, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21, 10)
+			cv2.destroyAllWindows()
 
 			break
 	
-	video_capture1.release()
-	cv2.destroyAllWindows()
+	# video_capture1.release()
+	# cv2.destroyAllWindows()
 
 	# cv2.imshow("scan data" ,result_im)
-	cv2.imwrite('/home/minhye/catkin_ws/src/scan.png',result_im)
-	cv2.waitKey(0)
+	cv2.imwrite('/home/ws/catkin_ws/src/scan.png',result_im)
+	# cv2.waitKey(0)
 	cv2.destroyAllWindows()
 
 	# 카메라로 촬영한 사진 열기.
-	with open("/home/minhye/catkin_ws/src/scan.png", "rb") as f:
+	with open("/home/ws/catkin_ws/src/scan.png", "rb") as f:
 	    img = base64.b64encode(f.read())
 
+	cv2.destroyAllWindows()
 
 
 	# 네이버 OCR 을 위한 URL 과 KEY 그리고 json 양식
@@ -192,11 +192,11 @@ def main():
 	res = json.loads(response.text)
 
 	# 추출된 json data 를 파일로 만들어준다.(주의)ensure_ascii = false 라고 해주지 않으면, 한글이 깨진다.
-	with io.open('/home/minhye/catkin_ws/src/1.json', 'w') as make_file:
+	with io.open('/home/ws/catkin_ws/src/1.json', 'w') as make_file:
 	    json.dump(response.text, make_file, ensure_ascii=False, indent=2)
 
 	# json 파일을 열고, OCR 된 text-data 들을 list 로 추출한다.
-	with io.open('/home/minhye/catkin_ws/src/1.json','r') as f:
+	with io.open('/home/ws/catkin_ws/src/1.json','r') as f:
 	    json_data = json.load(f)
 
 	# 한글 데이터를 불러오기 위해 encoding= utf-8 을 해주었다.
@@ -232,7 +232,7 @@ def main():
 				resultlist.append(room_)
 
 				# info.csv 에 있는 우리 서비스를 사용하는 사람의 택배만을 핸들링하기 위한 절차.
-				with open('/home/minhye/catkin_ws/src/Azure_Kinect_ROS_Driver/src/info.csv', 'r') as file:
+				with open('/home/ws/catkin_ws/src/Azure_Kinect_ROS_Driver/src/info.csv', 'r') as file:
 					reader = csv.reader(file, delimiter = ',')
 					num = 0
 					for row in reader:
@@ -262,6 +262,10 @@ def main():
 
 				floor = int(room_split[0] + room_split[1])
 				room = int(room_split[2] + room_split[3])
+
+				# Saving floor and room info in csv file
+				resultlist_.append(floor)
+				resultlist_.append(room)
 
 				# topic publish
 				floor_num.data = int(floor)
@@ -295,24 +299,40 @@ def main():
 	##########################################################
 
 	# 아파트의 동, 호수 정보를 숫자로만 저장한다.
-	with open('/home/minhye/catkin_ws/src/2.csv', 'w') as f:
+	with open('/home/ws/catkin_ws/src/2.csv', 'w') as f:
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist)
 
 	# 집의 층과 호수 정보만을 따로 추출해서 저장한다.
-	with open('/home/minhye/catkin_ws/src/3.csv', 'w') as f:
+	with open('/home/ws/catkin_ws/src/3.csv', 'w') as f:
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist_)
 
 
 
+def item_status_cb(data):
+	global item_status_data
+	item_status_data = data.data
+
 
 if __name__ == '__main__':
-    try:
-        start = main()
-        # rospy.spin() 
-        print 
-        print "over!! :)"
-        print
-    except Exception: 
-		pass
+
+	rospy.init_node("ocr_status", anonymous=True)
+	bridge = CvBridge()
+	video_capture1 = cv2.VideoCapture(0)
+	Test = OpenVideo()
+
+	while not rospy.is_shutdown():
+		item_status_data = "none"
+		item_status = rospy.Subscriber("/wstation/lift_item_size", String, item_status_cb)
+
+		if item_status_data == "good" :
+			start = main()
+			print 
+			print "over!! :)"
+			print
+			cv2.destroyAllWindows()
+		# else :
+		# 	print
+		# 	print("not yet")
+		# 	print
