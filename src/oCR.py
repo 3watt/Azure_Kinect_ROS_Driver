@@ -36,12 +36,6 @@ import time
 ### 촬영한 운송장을 네이버 OCR API 를 호출하여, 기능을 수행한 후,
 ### 아파트의 동, 호수 정보를 parsing 하는 script 이다.
 
-
-# Azure Kinect 경우 웹캠이 있는 노트북으로 사용할 때에는, 4번으로 설정해주어야한다. 컴퓨터의 경우 0 번을 해주면 된다.
-# bridge 는 Opencv 와 ROS 의 연결을 위해 필요한것이다.
-# bridge = CvBridge()
-# video_capture1 = cv2.VideoCapture(0)
-
 # Opencv 로 받아온 윤곽의 point 를 rect 배열로 변환시켜준다.
 def order_points(pts):
 	rect = np.zeros((4, 2), dtype = "float32")
@@ -54,24 +48,17 @@ def order_points(pts):
 
 	return rect
 
-# 카메라가 켜졌는지 여부를 알려주는 함수.
-def OpenVideo():
-	Test = False
-	if video_capture1.isOpened():
-		print 'it is opened successfully!'
-		Test = True
-	else:
-		print 'cannot open it!'
 
-	return Test
-
-
-
+def video_callback(data) :
+	bridge = CvBridge()
+	global frame
+	frame = bridge.imgmsg_to_cv2(data)
+	# cv2.imshow("camera", frame)
+	# rospy.loginfo("receiving video frame")
+	
 def main():
 
 	while(True):
-
-		ret, frame = video_capture1.read()
 
 		if cv2.waitKey(1) & 0xFF == ord('q'):
 			break
@@ -117,9 +104,7 @@ def main():
 
 			cv2.drawContours(frame, [screenCnt], -1, (0, 255, 0), 2)
 			cv2.imshow("Frame", frame)
-
 			# cv2.waitKey(50)
-
 
 			rect = order_points(screenCnt.reshape(4, 2))
 			(topLeft, topRight, bottomRight, bottomLeft) = rect
@@ -145,10 +130,6 @@ def main():
 
 			break
 	
-	# video_capture1.release()
-	# cv2.destroyAllWindows()
-
-	# cv2.imshow("scan data" ,result_im)
 	cv2.imwrite('/home/ws/catkin_ws/src/scan.png',result_im)
 	# cv2.waitKey(0)
 	cv2.destroyAllWindows()
@@ -324,16 +305,11 @@ def item_status_cb(data):
 	global item_status_data
 	item_status_data = data.data
 
-
 if __name__ == '__main__':
 
 	rospy.init_node("ocr_status", anonymous=True)
-	bridge = CvBridge()
-	video_capture1 = cv2.VideoCapture(0)
-	
-	# 카메라 ON
-	# Test = OpenVideo()
-	Test = OpenVideo()
+
+	video_subscriber = rospy.Subscriber("/rgb/image_raw", Image, video_callback)
 
 	while not rospy.is_shutdown():
 		item_status_data = "none"
@@ -344,8 +320,7 @@ if __name__ == '__main__':
 			print 
 			print "over!! :)"
 			print
-			cv2.destroyAllWindows()
-		# else :
-		# 	print
-		# 	print("not yet")
-		# 	print
+		else :
+			print
+			print("not yet")
+			print
