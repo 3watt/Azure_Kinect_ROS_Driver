@@ -21,6 +21,12 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   nodelet
   cv_bridge
+  message_generation
+)
+
+add_service_files(
+  FILES
+  initalize.srv
 )
 
 ###################################
@@ -35,7 +41,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES k4a_ros_bridge
-#  CATKIN_DEPENDS roscpp std_msgs
+ CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
 )
 
