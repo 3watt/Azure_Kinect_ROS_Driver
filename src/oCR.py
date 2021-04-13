@@ -69,21 +69,6 @@ def OpenVideo():
 
 def main():
 
-	# 카메라 ON
-	# Test = OpenVideo()
-	
-	# 토픽으로 층, 호수 정보 publish
-	# pub = rospy.Publisher("image_topic_2",Image, queue_size=10)
-	floor_pub = rospy.Publisher("/floor_num", Int16, queue_size=1)
-	room_pub = rospy.Publisher("/room_num", Int16, queue_size=1)
-
-	floor_num = Int16()
-	room_num = Int16()
-
-	# rospy.init_node('floor_and_room_publisher', anonymous=True)
-	rate = rospy.Rate(10)
-
-
 	while(True):
 
 		ret, frame = video_capture1.read()
@@ -167,12 +152,26 @@ def main():
 	cv2.imwrite('/home/ws/catkin_ws/src/scan.png',result_im)
 	# cv2.waitKey(0)
 	cv2.destroyAllWindows()
-
+	global img 
 	# 카메라로 촬영한 사진 열기.
 	with open("/home/ws/catkin_ws/src/scan.png", "rb") as f:
 	    img = base64.b64encode(f.read())
 
 	cv2.destroyAllWindows()
+	naver_ocr()
+
+def naver_ocr() :
+
+	# 토픽으로 층, 호수 정보 publish
+	# pub = rospy.Publisher("image_topic_2",Image, queue_size=10)
+	floor_pub = rospy.Publisher("/floor_num", Int16, queue_size=1)
+	room_pub = rospy.Publisher("/room_num", Int16, queue_size=1)
+
+	floor_num = Int16()
+	room_num = Int16()
+
+	# rospy.init_node('floor_and_room_publisher', anonymous=True)
+	rate = rospy.Rate(10)
 
 
 	# 네이버 OCR 을 위한 URL 과 KEY 그리고 json 양식
@@ -255,11 +254,12 @@ def main():
 
 					for i in range(num) :
 						if str(_room_point[i]).find(room_) != -1 :
-							print("find")
 							search_result = 0
 
 					if search_result == -1 :
 						print("This parcel is not on our service!!")
+					else :
+						print("find")
 
 
 				# 층, 호수 구분
@@ -320,7 +320,6 @@ def main():
 	    writer.writerow(resultlist_)
 
 
-
 def item_status_cb(data):
 	global item_status_data
 	item_status_data = data.data
@@ -331,6 +330,9 @@ if __name__ == '__main__':
 	rospy.init_node("ocr_status", anonymous=True)
 	bridge = CvBridge()
 	video_capture1 = cv2.VideoCapture(0)
+	
+	# 카메라 ON
+	# Test = OpenVideo()
 	Test = OpenVideo()
 
 	while not rospy.is_shutdown():
