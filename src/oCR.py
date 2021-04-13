@@ -62,7 +62,7 @@ def main():
 
 		if cv2.waitKey(1) & 0xFF == ord('q'):
 			break
-
+		
 		# 윤각 잡기 편하도록 gray 이미지로 바꾼 후 진행. GaussianBlur 를 통해 
 		# 컴퓨터가 이미지 처리를 편하게 하게끔 해준다.
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
