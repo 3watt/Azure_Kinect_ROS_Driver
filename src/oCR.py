@@ -47,14 +47,6 @@ def order_points(pts):
 	rect[3] = pts[np.argmax(diff)]
 
 	return rect
-
-
-def video_callback(data) :
-	bridge = CvBridge()
-	global frame
-	frame = bridge.imgmsg_to_cv2(data)
-	# cv2.imshow("camera", frame)
-	# rospy.loginfo("receiving video frame")
 	
 def main():
 
@@ -121,9 +113,7 @@ def main():
 			varped = cv2.warpPerspective(frame, N, (maxWidth, maxHeight))
 			result_im = cv2.resize(varped, (1200,1000))
 
-
 			print("apply perspective transform.")
-
 			# varped = cv2.cvtColor(varped, cv2.COLOR_BGR2GRAY)
 			# varped = cv2.adaptiveThreshold(varped, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21, 10)
 			cv2.destroyAllWindows()
@@ -212,8 +202,6 @@ def naver_ocr() :
 
 	_room_point = []
 	room_split = ['0','0','0','0']
-	floor = None 
-	room = None
 
 	for row in list_arr:
 
@@ -243,6 +231,14 @@ def naver_ocr() :
 						print("find")
 
 
+				# global first_try
+				# global second_try
+				# # global trial
+
+				# floor = 0
+				# room = 0
+
+
 				# 층, 호수 구분
 				# 10 층 이상과 이하의 경우를 따로 나누어 계산한다.
 				if len(room_) == 3 : 
@@ -252,6 +248,8 @@ def naver_ocr() :
 					for i in range(4) :
 						room_split[i] = str(room_[i])
 
+				global floor
+				global room
 				floor = int(room_split[0] + room_split[1])
 				room = int(room_split[2] + room_split[3])
 
@@ -275,7 +273,6 @@ def naver_ocr() :
 							break
 
         			rate.sleep()
-					
 
 	    # '-' 의 경우 송장에서 쓰이는 경우가 너무 많아 특별한 제약을 걸지 않는 한 쓸 수 없을 듯 하다.
 	    # elif "-" in row:
@@ -300,16 +297,29 @@ def naver_ocr() :
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist_)
 
-
 def item_status_cb(data):
 	global item_status_data
 	item_status_data = data.data
+
+def video_callback(data) :
+	bridge = CvBridge()
+	global frame
+	frame = bridge.imgmsg_to_cv2(data)
+	# cv2.imshow("camera", frame)
+	# rospy.loginfo("receiving video frame")
+
+def init_callback(data) :
+	if data.data == True :
+		ocr_status.data = False	
 
 if __name__ == '__main__':
 
 	rospy.init_node("ocr_status", anonymous=True)
 
 	video_subscriber = rospy.Subscriber("/rgb/image_raw", Image, video_callback)
+	init_subscriber = rospy.Subscriber("/initialize", Bool, init_callback)
+	ocr_publisher = rospy.Publisher("/ocr_status", Bool, queue_size=1)
+	ocr_status = Bool()
 
 	while not rospy.is_shutdown():
 		item_status_data = "none"
@@ -320,7 +330,19 @@ if __name__ == '__main__':
 			print 
 			print "over!! :)"
 			print
-		else :
-			print
-			print("not yet")
-			print
+
+			if (int(floor) < 1) | (int(room) < 1) :
+				print("again")
+				ocr_status.data = False
+				again = main()
+			else :
+				ocr_status.data = True
+				print("ocr succeed at once!")
+				print
+			
+		ocr_publisher.publish(ocr_status)
+				
+		# else :
+			# print
+			# print("not yet")
+			# print
