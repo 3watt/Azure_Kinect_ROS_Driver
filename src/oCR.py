@@ -230,15 +230,6 @@ def naver_ocr() :
 					else :
 						print("find")
 
-
-				# global first_try
-				# global second_try
-				# # global trial
-
-				# floor = 0
-				# room = 0
-
-
 				# 층, 호수 구분
 				# 10 층 이상과 이하의 경우를 따로 나누어 계산한다.
 				if len(room_) == 3 : 
@@ -261,19 +252,6 @@ def naver_ocr() :
 				floor_num.data = int(floor)
 				room_num.data = int(room)
 				
-				while not rospy.is_shutdown():
-					
-					floor_connections = floor_pub.get_num_connections()
-					room_connections = room_pub.get_num_connections()
-
-					if floor_connections > 0 :
-						floor_pub.publish(floor_num)
-						if room_connections > 0 :
-							room_pub.publish(room_num)
-							break
-
-        			rate.sleep()
-
 	    # '-' 의 경우 송장에서 쓰이는 경우가 너무 많아 특별한 제약을 걸지 않는 한 쓸 수 없을 듯 하다.
 	    # elif "-" in row:
 	    #     if row[0].isdigit() :
@@ -307,18 +285,27 @@ def video_callback(data) :
 	frame = bridge.imgmsg_to_cv2(data)
 	# cv2.imshow("camera", frame)
 	# rospy.loginfo("receiving video frame")
-
+	
 def init_callback(data) :
 	if data.data == True :
-		ocr_status.data = False	
+		floor_num.data = 0
+		room_num.data = 0
+
 
 if __name__ == '__main__':
 
 	rospy.init_node("ocr_status", anonymous=True)
 
 	video_subscriber = rospy.Subscriber("/rgb/image_raw", Image, video_callback)
-	ocr_publisher = rospy.Publisher("/wstation/ocr_status", Bool, queue_size=1)
-	ocr_status = Bool()
+
+	ocr_publisher = rospy.Publisher("/wstation/ocr_status", String, queue_size=1)
+	ocr_status = String()
+
+	floor_pub = rospy.Publisher("/floor_num", Int16, queue_size=1)
+	room_pub = rospy.Publisher("/room_num", Int16, queue_size=1)
+
+	floor_num = Int16()
+	room_num = Int16()
 
 	while not rospy.is_shutdown():
 		item_status_data = "none"
@@ -331,21 +318,26 @@ if __name__ == '__main__':
 			print "over!! :)"
 			print
 
-			if (int(floor) < 1) | (int(room) < 1) :
-				print("again")
-				ocr_status.data = False
-				again = main()
-				if (int(floor) < 1) | (int(room) < 1) :
-					ocr_status.data = False
-				else :
-					ocr_status.data = True
-			else :
-				ocr_status.data = True
+			if (int(floor) > 1) & (int(room) > 1) :
 				print("ocr succeed at once!")
-				print
+				ocr_status.data = "good"
+				floor_num.data = int(floor)
+				room_num.data = int(room)
+
+			else :
+				print("again")
+				again = main()
+				if (int(floor) > 1) & (int(room) > 1) :
+					ocr_status.data = "good"
+					print("ocr succeed!")
+				else :
+					ocr_status.data = "bad"
+					print("ocr failed")
+
 		else :
-			ocr_status.data = False
+			ocr_status.data = "none"
 			
 		ocr_publisher.publish(ocr_status)
+		floor_pub.publish(floor_num)
+		room_pub.publish(room_num)
 
-		
