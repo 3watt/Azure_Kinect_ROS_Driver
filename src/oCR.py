@@ -317,13 +317,14 @@ if __name__ == '__main__':
 	rospy.init_node("ocr_status", anonymous=True)
 
 	video_subscriber = rospy.Subscriber("/rgb/image_raw", Image, video_callback)
-	init_subscriber = rospy.Subscriber("/initialize", Bool, init_callback)
-	ocr_publisher = rospy.Publisher("/ocr_status", Bool, queue_size=1)
+	ocr_publisher = rospy.Publisher("/wstation/ocr_status", Bool, queue_size=1)
 	ocr_status = Bool()
+	ocr_status.data = False
 
 	while not rospy.is_shutdown():
 		item_status_data = "none"
-		item_status = rospy.Subscriber("/wstation/lift_item_size", String, item_status_cb)
+		item_status = rospy.Subscriber("/dlfeks", String, item_status_cb)
+		init_subscriber = rospy.Subscriber("/initialize", Bool, init_callback)
 
 		if item_status_data == "good" :
 			start = main()
@@ -335,6 +336,10 @@ if __name__ == '__main__':
 				print("again")
 				ocr_status.data = False
 				again = main()
+				if (int(floor) < 1) | (int(room) < 1) :
+					ocr_status.data = False
+				else :
+					ocr_status.data = True
 			else :
 				ocr_status.data = True
 				print("ocr succeed at once!")
