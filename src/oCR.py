@@ -120,30 +120,18 @@ def main():
 
 			break
 	
-	cv2.imwrite('/home/ws/catkin_ws/src/scan.png',result_im)
+	cv2.imwrite('/home/seunghwan/catkin_ws/src/scan.png',result_im)
 	# cv2.waitKey(0)
 	cv2.destroyAllWindows()
 	global img 
 	# 카메라로 촬영한 사진 열기.
-	with open("/home/ws/catkin_ws/src/scan.png", "rb") as f:
+	with open("/home/seunghwan/catkin_ws/src/scan.png", "rb") as f:
 	    img = base64.b64encode(f.read())
 
 	cv2.destroyAllWindows()
 	naver_ocr()
 
 def naver_ocr() :
-
-	# 토픽으로 층, 호수 정보 publish
-	# pub = rospy.Publisher("image_topic_2",Image, queue_size=10)
-	floor_pub = rospy.Publisher("/floor_num", Int16, queue_size=1)
-	room_pub = rospy.Publisher("/room_num", Int16, queue_size=1)
-
-	floor_num = Int16()
-	room_num = Int16()
-
-	# rospy.init_node('floor_and_room_publisher', anonymous=True)
-	rate = rospy.Rate(10)
-
 
 	# 네이버 OCR 을 위한 URL 과 KEY 그리고 json 양식
 	URL = "https://294fcbd76a9b4e958d42600f6fef8b80.apigw.ntruss.com/custom/v1/6633/3082721950f37db2302acfa2abfdb02b9931bc77ab2e1bc2d3d4a0b6ca676961/general"
@@ -173,11 +161,11 @@ def naver_ocr() :
 	res = json.loads(response.text)
 
 	# 추출된 json data 를 파일로 만들어준다.(주의)ensure_ascii = false 라고 해주지 않으면, 한글이 깨진다.
-	with io.open('/home/ws/catkin_ws/src/1.json', 'w') as make_file:
+	with io.open('/home/seunghwan/catkin_ws/src/1.json', 'w') as make_file:
 	    json.dump(response.text, make_file, ensure_ascii=False, indent=2)
 
 	# json 파일을 열고, OCR 된 text-data 들을 list 로 추출한다.
-	with io.open('/home/ws/catkin_ws/src/1.json','r') as f:
+	with io.open('/home/seunghwan/catkin_ws/src/1.json','r') as f:
 	    json_data = json.load(f)
 
 	# 한글 데이터를 불러오기 위해 encoding= utf-8 을 해주었다.
@@ -211,7 +199,7 @@ def naver_ocr() :
 				resultlist.append(room_)
 
 				# info.csv 에 있는 우리 서비스를 사용하는 사람의 택배만을 핸들링하기 위한 절차.
-				with open('/home/ws/catkin_ws/src/Azure_Kinect_ROS_Driver/src/info.csv', 'r') as file:
+				with open('/home/seunghwan/catkin_ws/src/Azure_Kinect_ROS_Driver/src/info.csv', 'r') as file:
 					reader = csv.reader(file, delimiter = ',')
 					num = 0
 					for row in reader:
@@ -247,10 +235,6 @@ def naver_ocr() :
 				# Saving floor and room info in csv file
 				resultlist_.append(floor)
 				resultlist_.append(room)
-
-				# topic publish
-				floor_num.data = int(floor)
-				room_num.data = int(room)
 				
 	    # '-' 의 경우 송장에서 쓰이는 경우가 너무 많아 특별한 제약을 걸지 않는 한 쓸 수 없을 듯 하다.
 	    # elif "-" in row:
@@ -266,12 +250,12 @@ def naver_ocr() :
 	##########################################################
 
 	# 아파트의 동, 호수 정보를 숫자로만 저장한다.
-	with open('/home/ws/catkin_ws/src/2.csv', 'w') as f:
+	with open('/home/seunghwan/catkin_ws/src/2.csv', 'w') as f:
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist)
 
 	# 집의 층과 호수 정보만을 따로 추출해서 저장한다.
-	with open('/home/ws/catkin_ws/src/3.csv', 'w') as f:
+	with open('/home/seunghwan/catkin_ws/src/3.csv', 'w') as f:
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist_)
 
@@ -290,6 +274,11 @@ def init_callback(data) :
 	if data.data == True :
 		floor_num.data = 0
 		room_num.data = 0
+		ocr_status.data = "none"
+
+def trigger_cb(data) :
+	global trigger
+	trigger = data.data
 
 
 if __name__ == '__main__':
@@ -309,33 +298,41 @@ if __name__ == '__main__':
 
 	while not rospy.is_shutdown():
 		item_status_data = "none"
-		item_status = rospy.Subscriber("/wstation/lift_item_size", String, item_status_cb)
+
+		trigger = rospy.Subscriber("/wstation/start_ocr_estimation", Bool, trigger_cb, queue_size=1)
+		
+		item_status = rospy.Subscriber("/wstation/lift_item_size", String, item_status_cb, queue_size=1)
+
 		init_subscriber = rospy.Subscriber("/initialize", Bool, init_callback)
 
-		if item_status_data == "good" :
-			start = main()
-			print 
-			print "over!! :)"
-			print
+		if trigger == True :
+			if item_status_data == "good" :
+				
+				ocr_status.data = "trigger_off"
+				ocr_publisher.publish(ocr_status)
+				rospy.sleep(2.5)
+				
+				start = main()
+				print 
+				print "over!! :)"
+				print
 
-			if (int(floor) > 1) & (int(room) > 1) :
-				print("ocr succeed at once!")
-				ocr_status.data = "good"
-				floor_num.data = int(floor)
-				room_num.data = int(room)
-
-			else :
-				print("again")
-				again = main()
 				if (int(floor) > 1) & (int(room) > 1) :
+					print("ocr succeed at once!")
 					ocr_status.data = "good"
-					print("ocr succeed!")
-				else :
-					ocr_status.data = "bad"
-					print("ocr failed")
+					floor_num.data = int(floor)
+					room_num.data = int(room)
 
-		else :
-			ocr_status.data = "none"
+				else :
+					print("again")
+					again = main()
+					if (int(floor) > 1) & (int(room) > 1) :
+						ocr_status.data = "good"
+						print("ocr succeed!")
+					else :
+						ocr_status.data = "bad"
+						print("ocr failed")
+
 			
 		ocr_publisher.publish(ocr_status)
 		floor_pub.publish(floor_num)
