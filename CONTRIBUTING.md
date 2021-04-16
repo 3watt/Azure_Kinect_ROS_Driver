@@ -113,6 +113,11 @@ you need to provide a CLA and decorate the PR appropriately (e.g., label,
 comment). Simply follow the instructions provided by the bot. You will only
 need to do this once across all repositories using our CLA.
 
+<<<<<<< HEAD
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact
+=======
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). 
+For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact 
+>>>>>>> f0e38a99f54ed811b7eba852aafc67b2a3aa741f
 [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
