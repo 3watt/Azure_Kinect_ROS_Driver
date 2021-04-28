@@ -111,7 +111,22 @@ def main():
 
 			N = cv2.getPerspectiveTransform(rect, dst)
 			varped = cv2.warpPerspective(frame, N, (maxWidth, maxHeight))
-			result_im = cv2.resize(varped, (1200,1000))
+			check = 1
+			if maxHeight > maxWidth :
+				check = 2
+				maxHeight = maxWidth
+				maxWidth = maxHeight
+				img90 = cv2.rotate(varped, cv2.ROTATE_90_CLOCKWISE)
+
+			m_w = 1300 / maxWidth 
+			m_h = 1000 / maxHeight 
+
+			max_mul = int(max(m_h,m_w))
+
+			if check = 2 :
+				result_im = cv2.resize(img90, (maxHeight*max_mul,maxWidth*max_mul))
+			elif check = 1 : 	
+				result_im = cv2.resize(img90, (maxHeight*max_mul,maxWidth*max_mul))
 
 			print("apply perspective transform.")
 			# varped = cv2.cvtColor(varped, cv2.COLOR_BGR2GRAY)
@@ -120,7 +135,12 @@ def main():
 
 			break
 	
-	cv2.imwrite('/home/seunghwan/catkin_ws/src/scan.png',result_im)
+	if trial == 2 :
+		img180 = cv2.rotate(img_origin, cv2.ROTATE_180)
+		cv2.imwrite('/home/seunghwan/catkin_ws/src/scan.png',img180)
+	else : 
+		cv2.imwrite('/home/seunghwan/catkin_ws/src/scan.png',result_im)
+
 	# cv2.waitKey(0)
 	cv2.destroyAllWindows()
 	global img 
@@ -300,6 +320,8 @@ if __name__ == '__main__':
 	floor_num = Int16()
 	room_num = Int16()
 
+	global trial
+
 	while not rospy.is_shutdown():
 		item_status_data = "none"
 
@@ -316,6 +338,8 @@ if __name__ == '__main__':
 				ocr_publisher.publish(ocr_status)
 				rospy.sleep(2.5)
 				
+				trial = 1
+
 				start = main()
 				print 
 				print "over!! :)"
@@ -328,6 +352,7 @@ if __name__ == '__main__':
 					room_num.data = int(room)
 
 				else :
+					trial = 2
 					print("again")
 					again = main()
 					if (int(floor) > 1) & (int(room) > 1) :

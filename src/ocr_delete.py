@@ -60,13 +60,13 @@ def main():
 	if (trial == 2) :
 		img180 = cv2.rotate(img_origin, cv2.ROTATE_180)
 		cv2.imwrite('/home/minwoo/catkin_ws/src/scan.png',img180)
-	else :
-		if _height > _width  :
-			img90 = cv2.rotate(img_origin, cv2.ROTATE_90_CLOCKWISE)
-			cv2.imwrite('/home/minwoo/catkin_ws/src/scan.png',img90)
-			print("wrong rotation")
-		else : 
-			print("correct rotation")
+	# else :
+	# 	if _height > _width  :
+	# 		img90 = cv2.rotate(img_origin, cv2.ROTATE_90_CLOCKWISE)
+	# 		cv2.imwrite('/home/minwoo/catkin_ws/src/scan.png',img90)
+	# 		print("wrong rotation")
+	# 	else : 
+	# 		print("correct rotation")
 
 
 	# 카메라로 촬영한 사진 열기.
