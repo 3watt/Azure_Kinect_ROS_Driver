@@ -121,12 +121,13 @@ def main():
 			m_w = 1300 / maxWidth 
 			m_h = 1000 / maxHeight 
 
-			max_mul = int(max(m_h,m_w))
+			max_mul = max(m_h,m_w)
 
-			if check = 2 :
-				result_im = cv2.resize(img90, (maxHeight*max_mul,maxWidth*max_mul))
-			elif check = 1 : 	
-				result_im = cv2.resize(img90, (maxHeight*max_mul,maxWidth*max_mul))
+
+			if check == 2 :
+				result_im = cv2.resize(img90, (int(maxWidth*max_mul),int(maxHeight*max_mul)))
+			elif check == 1 : 	
+				result_im = cv2.resize(varped, (int(maxWidth*max_mul),int(maxHeight*max_mul)))
 
 			print("apply perspective transform.")
 			# varped = cv2.cvtColor(varped, cv2.COLOR_BGR2GRAY)
@@ -136,16 +137,16 @@ def main():
 			break
 	
 	if trial == 2 :
-		img180 = cv2.rotate(img_origin, cv2.ROTATE_180)
-		cv2.imwrite('/home/seunghwan/catkin_ws/src/scan.png',img180)
+		img180 = cv2.rotate(result_im, cv2.ROTATE_180)
+		cv2.imwrite('/home/ws/catkin_ws/src/scan.png',img180)
 	else : 
-		cv2.imwrite('/home/seunghwan/catkin_ws/src/scan.png',result_im)
+		cv2.imwrite('/home/ws/catkin_ws/src/scan.png',result_im)
 
 	# cv2.waitKey(0)
 	cv2.destroyAllWindows()
 	global img 
 	# 카메라로 촬영한 사진 열기.
-	with open("/home/seunghwan/catkin_ws/src/scan.png", "rb") as f:
+	with open("/home/ws/catkin_ws/src/scan.png", "rb") as f:
 	    img = base64.b64encode(f.read())
 
 	cv2.destroyAllWindows()
@@ -181,11 +182,11 @@ def naver_ocr() :
 	res = json.loads(response.text)
 
 	# 추출된 json data 를 파일로 만들어준다.(주의)ensure_ascii = false 라고 해주지 않으면, 한글이 깨진다.
-	with io.open('/home/seunghwan/catkin_ws/src/1.json', 'w') as make_file:
+	with io.open('/home/ws/catkin_ws/src/1.json', 'w') as make_file:
 	    json.dump(response.text, make_file, ensure_ascii=False, indent=2)
 
 	# json 파일을 열고, OCR 된 text-data 들을 list 로 추출한다.
-	with io.open('/home/seunghwan/catkin_ws/src/1.json','r') as f:
+	with io.open('/home/ws/catkin_ws/src/1.json','r') as f:
 	    json_data = json.load(f)
 
 	# 한글 데이터를 불러오기 위해 encoding= utf-8 을 해주었다.
@@ -225,7 +226,7 @@ def naver_ocr() :
 				resultlist.append(room_)
 
 				# info.csv 에 있는 우리 서비스를 사용하는 사람의 택배만을 핸들링하기 위한 절차.
-				with open('/home/seunghwan/catkin_ws/src/Azure_Kinect_ROS_Driver/src/info.csv', 'r') as file:
+				with open('/home/ws/catkin_ws/src/Azure_Kinect_ROS_Driver/src/info.csv', 'r') as file:
 					reader = csv.reader(file, delimiter = ',')
 					num = 0
 					for row in reader:
@@ -274,12 +275,12 @@ def naver_ocr() :
 	##########################################################
 
 	# 아파트의 동, 호수 정보를 숫자로만 저장한다.
-	with open('/home/seunghwan/catkin_ws/src/2.csv', 'w') as f:
+	with open('/home/ws/catkin_ws/src/2.csv', 'w') as f:
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist)
 
 	# 집의 층과 호수 정보만을 따로 추출해서 저장한다.
-	with open('/home/seunghwan/catkin_ws/src/3.csv', 'w') as f:
+	with open('/home/ws/catkin_ws/src/3.csv', 'w') as f:
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist_)
 
