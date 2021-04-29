@@ -49,106 +49,30 @@ def order_points(pts):
 	return rect
 	
 def main():
-
-	while(True):
-
-		if cv2.waitKey(1) & 0xFF == ord('q'):
-			break
-		
-		# 윤각 잡기 편하도록 gray 이미지로 바꾼 후 진행. GaussianBlur 를 통해 
-		# 컴퓨터가 이미지 처리를 편하게 하게끔 해준다.
-		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-		gray = cv2.GaussianBlur(gray, (3,3), 0)
-		edged = cv2.Canny(gray, 75, 200)
-
-		print("Edge Detection start")
-
-
-		(_,cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-		cnts = sorted(cnts, key = cv2.contourArea, reverse=True)
-
-		for c in cnts:
-			peri = cv2.arcLength(c, True)
-			approx = cv2.approxPolyDP(c, 0.02* peri, True)
-			# print("approx :")
-			# print(approx)
-			screenCnt = []
-
-			if len(approx) == 4:
-				contourSize = cv2.contourArea(approx)
-				paperSize = 200 # 21.0 * 29.7
-				ratio = contourSize / paperSize
-				# print(contourSize)
-				# print(paperSize)
-				# print(ratio)
-
-				if ratio > 200 : 
-					screenCnt = approx
-				break
-
-		if len(screenCnt) == 0:
-			print("fail to get edge")
-			cv2.imshow("Frame", frame)
-			continue
-		else:
-			print("show contour of paper")
-			cv2.waitKey(1000)
-
-			cv2.drawContours(frame, [screenCnt], -1, (0, 255, 0), 2)
-			cv2.imshow("Frame", frame)
-			# cv2.waitKey(50)
-
-			rect = order_points(screenCnt.reshape(4, 2))
-			(topLeft, topRight, bottomRight, bottomLeft) = rect
-			v1 = abs(bottomRight[0] - bottomLeft[0])
-			v2 = abs(topRight[0] - topLeft[0])
-			h1 = abs(topRight[1] - bottomRight[1])
-			h2 = abs(topLeft[1] - bottomLeft[1])
-			maxWidth = max([v1, v2])
-			maxHeight = max([h1, h2])
-
-			dst = np.float32([[0,0], [maxWidth-1, 0], [maxWidth-1, maxHeight-1], [0, maxHeight-1]])
-
-			N = cv2.getPerspectiveTransform(rect, dst)
-			varped = cv2.warpPerspective(frame, N, (maxWidth, maxHeight))
-			check = 1
-			if maxHeight > maxWidth :
-				check = 2
-				maxHeight = maxWidth
-				maxWidth = maxHeight
-				img90 = cv2.rotate(varped, cv2.ROTATE_90_CLOCKWISE)
-
-			m_w = 1300 / maxWidth 
-			m_h = 1000 / maxHeight 
-
-			max_mul = int(max(m_h,m_w))
-
-			if check = 2 :
-				result_im = cv2.resize(img90, (maxHeight*max_mul,maxWidth*max_mul))
-			elif check = 1 : 	
-				result_im = cv2.resize(img90, (maxHeight*max_mul,maxWidth*max_mul))
-
-			print("apply perspective transform.")
-			# varped = cv2.cvtColor(varped, cv2.COLOR_BGR2GRAY)
-			# varped = cv2.adaptiveThreshold(varped, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21, 10)
-			cv2.destroyAllWindows()
-
-			break
+	global img
 	
-	if trial == 2 :
+	img_origin = cv2.imread("/home/minwoo/catkin_ws/src/scan.png",cv2.IMREAD_COLOR)
+	
+	_height, _width, channel = img_origin.shape
+	
+	print("again")
+	print(trial)
+	if (trial == 2) :
 		img180 = cv2.rotate(img_origin, cv2.ROTATE_180)
-		cv2.imwrite('/home/seunghwan/catkin_ws/src/scan.png',img180)
-	else : 
-		cv2.imwrite('/home/seunghwan/catkin_ws/src/scan.png',result_im)
+		cv2.imwrite('/home/minwoo/catkin_ws/src/scan.png',img180)
+	# else :
+	# 	if _height > _width  :
+	# 		img90 = cv2.rotate(img_origin, cv2.ROTATE_90_CLOCKWISE)
+	# 		cv2.imwrite('/home/minwoo/catkin_ws/src/scan.png',img90)
+	# 		print("wrong rotation")
+	# 	else : 
+	# 		print("correct rotation")
 
-	# cv2.waitKey(0)
-	cv2.destroyAllWindows()
-	global img 
+
 	# 카메라로 촬영한 사진 열기.
-	with open("/home/seunghwan/catkin_ws/src/scan.png", "rb") as f:
+	with open("/home/minwoo/catkin_ws/src/scan.png", "rb") as f:
 	    img = base64.b64encode(f.read())
 
-	cv2.destroyAllWindows()
 	naver_ocr()
 
 def naver_ocr() :
@@ -181,11 +105,11 @@ def naver_ocr() :
 	res = json.loads(response.text)
 
 	# 추출된 json data 를 파일로 만들어준다.(주의)ensure_ascii = false 라고 해주지 않으면, 한글이 깨진다.
-	with io.open('/home/seunghwan/catkin_ws/src/1.json', 'w') as make_file:
+	with io.open('/home/minwoo/catkin_ws/src/1.json', 'w') as make_file:
 	    json.dump(response.text, make_file, ensure_ascii=False, indent=2)
 
 	# json 파일을 열고, OCR 된 text-data 들을 list 로 추출한다.
-	with io.open('/home/seunghwan/catkin_ws/src/1.json','r') as f:
+	with io.open('/home/minwoo/catkin_ws/src/1.json','r') as f:
 	    json_data = json.load(f)
 
 	# 한글 데이터를 불러오기 위해 encoding= utf-8 을 해주었다.
@@ -225,7 +149,7 @@ def naver_ocr() :
 				resultlist.append(room_)
 
 				# info.csv 에 있는 우리 서비스를 사용하는 사람의 택배만을 핸들링하기 위한 절차.
-				with open('/home/seunghwan/catkin_ws/src/Azure_Kinect_ROS_Driver/src/info.csv', 'r') as file:
+				with open('/home/minwoo/catkin_ws/src/Azure_Kinect_ROS_Driver/src/info.csv', 'r') as file:
 					reader = csv.reader(file, delimiter = ',')
 					num = 0
 					for row in reader:
@@ -274,25 +198,19 @@ def naver_ocr() :
 	##########################################################
 
 	# 아파트의 동, 호수 정보를 숫자로만 저장한다.
-	with open('/home/seunghwan/catkin_ws/src/2.csv', 'w') as f:
+	with open('/home/minwoo/catkin_ws/src/2.csv', 'w') as f:
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist)
 
 	# 집의 층과 호수 정보만을 따로 추출해서 저장한다.
-	with open('/home/seunghwan/catkin_ws/src/3.csv', 'w') as f:
+	with open('/home/minwoo/catkin_ws/src/3.csv', 'w') as f:
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist_)
 
 def item_status_cb(data):
 	global item_status_data
 	item_status_data = data.data
-
-def video_callback(data) :
-	bridge = CvBridge()
-	global frame
-	frame = bridge.imgmsg_to_cv2(data)
-	# cv2.imshow("camera", frame)
-	# rospy.loginfo("receiving video frame")
+	
 	
 def init_callback(data) :
 	if data.data == True :
@@ -308,8 +226,6 @@ def trigger_cb(data) :
 if __name__ == '__main__':
 
 	rospy.init_node("ocr_status", anonymous=True)
-
-	video_subscriber = rospy.Subscriber("/rgb/image_raw", Image, video_callback)
 
 	ocr_publisher = rospy.Publisher("/wstation/ocr_status", String, queue_size=1)
 	ocr_status = String()
@@ -330,7 +246,7 @@ if __name__ == '__main__':
 		item_status = rospy.Subscriber("/wstation/lift_item_size", String, item_status_cb, queue_size=1)
 
 		init_subscriber = rospy.Subscriber("/initialize", Bool, init_callback)
-
+		
 		if trigger == True :
 			if item_status_data == "good" :
 				
@@ -339,7 +255,7 @@ if __name__ == '__main__':
 				rospy.sleep(2.5)
 				
 				trial = 1
-
+				
 				start = main()
 				print 
 				print "over!! :)"
