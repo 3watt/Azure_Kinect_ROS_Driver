@@ -11,6 +11,7 @@ import re
 import rospy
 import cv2
 import numpy as np
+from matplotlib import pyplot as plt
 
 from std_msgs.msg import Byte, Bool, Int16, String, Int8MultiArray
 from sensor_msgs.msg import Image, CameraInfo, CompressedImage
@@ -20,6 +21,8 @@ import geometry_msgs.msg
 
 
 import time
+
+SAVE_PATH = "/home/seunghwan/catkin_ws/src/"
 
 ######################################################################
 ######################################################################
@@ -47,7 +50,7 @@ def order_points(pts):
 	rect[3] = pts[np.argmax(diff)]
 
 	return rect
-	
+
 def main():
 
 	while(True):
@@ -59,10 +62,10 @@ def main():
 		# 컴퓨터가 이미지 처리를 편하게 하게끔 해준다.
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		gray = cv2.GaussianBlur(gray, (3,3), 0)
-		edged = cv2.Canny(gray, 75, 200)
+		ret,thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)		# added by s
+		edged = cv2.Canny(thresh, 75, 200)
 
 		print("Edge Detection start")
-
 
 		(_,cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 		cnts = sorted(cnts, key = cv2.contourArea, reverse=True)
@@ -76,19 +79,20 @@ def main():
 
 			if len(approx) == 4:
 				contourSize = cv2.contourArea(approx)
-				paperSize = 200 # 21.0 * 29.7
+				paperSize = 200 #200 # 21.0 * 29.7
 				ratio = contourSize / paperSize
 				# print(contourSize)
 				# print(paperSize)
 				# print(ratio)
 
-				if ratio > 200 : 
+				if ratio > 200 : # 200
 					screenCnt = approx
 				break
 
 		if len(screenCnt) == 0:
 			print("fail to get edge")
 			cv2.imshow("Frame", frame)
+			cv2.imshow("edged", edged)
 			continue
 		else:
 			print("show contour of paper")
@@ -138,19 +142,63 @@ def main():
 	
 	if trial == 2 :
 		img180 = cv2.rotate(result_im, cv2.ROTATE_180)
-		cv2.imwrite('/home/ws/catkin_ws/src/scan.png',img180)
+		cv2.imwrite(SAVE_PATH + 'scan.png',img180)
+		# cv2.imwrite('/home/ws/catkin_ws/src/scan.png',img180)
 	else : 
-		cv2.imwrite('/home/ws/catkin_ws/src/scan.png',result_im)
+		cv2.imwrite(SAVE_PATH + 'scan.png',result_im)
+		# cv2.imwrite('/home/ws/catkin_ws/src/scan.png',result_im)
 
 	# cv2.waitKey(0)
 	cv2.destroyAllWindows()
 	global img 
 	# 카메라로 촬영한 사진 열기.
-	with open("/home/ws/catkin_ws/src/scan.png", "rb") as f:
+	with open(SAVE_PATH + "scan.png", "rb") as f:
 	    img = base64.b64encode(f.read())
 
 	cv2.destroyAllWindows()
 	naver_ocr()
+
+def scanner():    
+	global frame 
+
+	while (True):
+		if cv2.waitKey(1) & 0xFF == ord('q'):
+			break
+
+		clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+		original = frame.copy()
+		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+		contrast = clahe.apply(gray)
+
+		# blurred = cv2.medianBlur(thresh, 21)
+		resContrast = cv2.GaussianBlur(contrast, (3,3), 0)
+		ret,thresh = cv2.threshold(resContrast, 200, 255, cv2.THRESH_BINARY)
+
+		canny = cv2.Canny(thresh, 75, 200)
+
+		dialated = cv2.dilate(canny, cv2.getStructuringElement(cv2.MORPH_RECT,(5,5)), iterations = 3)
+		closing = cv2.morphologyEx(dialated, cv2.MORPH_CLOSE, np.ones((5,5),np.uint8),iterations = 10)
+		contimage, contours, hierarchy = cv2.findContours(closing, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+		contours = sorted(contours, key = cv2.contourArea, reverse = True)[:5]
+		target = None
+		
+		for c in contours:
+			p = cv2.arcLength(c, True)
+			approx = cv2.approxPolyDP(c, 0.09 * p, True)
+			
+			if len(approx) == 4:
+				target = approx
+				cv2.drawContours(frame, [target], -1, (0, 255, 0), 2)
+				break
+		
+		cv2.imshow('frame', frame)
+		# plt.figure(figsize = (20,20))
+		# plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+		# plt.title("final")
+		# plt.show()
+
+	cv2.destroyAllWindows()
 
 def naver_ocr() :
 
@@ -182,11 +230,11 @@ def naver_ocr() :
 	res = json.loads(response.text)
 
 	# 추출된 json data 를 파일로 만들어준다.(주의)ensure_ascii = false 라고 해주지 않으면, 한글이 깨진다.
-	with io.open('/home/ws/catkin_ws/src/1.json', 'w') as make_file:
+	with io.open(SAVE_PATH + '1.json', 'w') as make_file:
 	    json.dump(response.text, make_file, ensure_ascii=False, indent=2)
 
 	# json 파일을 열고, OCR 된 text-data 들을 list 로 추출한다.
-	with io.open('/home/ws/catkin_ws/src/1.json','r') as f:
+	with io.open(SAVE_PATH + '1.json','r') as f:
 	    json_data = json.load(f)
 
 	# 한글 데이터를 불러오기 위해 encoding= utf-8 을 해주었다.
@@ -226,7 +274,7 @@ def naver_ocr() :
 				resultlist.append(room_)
 
 				# info.csv 에 있는 우리 서비스를 사용하는 사람의 택배만을 핸들링하기 위한 절차.
-				with open('/home/ws/catkin_ws/src/Azure_Kinect_ROS_Driver/src/info.csv', 'r') as file:
+				with open(SAVE_PATH + 'Azure_Kinect_ROS_Driver/src/info.csv', 'r') as file:
 					reader = csv.reader(file, delimiter = ',')
 					num = 0
 					for row in reader:
@@ -275,12 +323,12 @@ def naver_ocr() :
 	##########################################################
 
 	# 아파트의 동, 호수 정보를 숫자로만 저장한다.
-	with open('/home/ws/catkin_ws/src/2.csv', 'w') as f:
+	with open(SAVE_PATH + '2.csv', 'w') as f:
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist)
 
 	# 집의 층과 호수 정보만을 따로 추출해서 저장한다.
-	with open('/home/ws/catkin_ws/src/3.csv', 'w') as f:
+	with open(SAVE_PATH + '3.csv', 'w') as f:
 	    writer = csv.writer(f)
 	    writer.writerow(resultlist_)
 
@@ -333,7 +381,8 @@ if __name__ == '__main__':
 		init_subscriber = rospy.Subscriber("/initialize", Bool, init_callback)
 
 		if trigger == True :
-			if item_status_data == "good" :
+				print("hihi")
+			# if item_status_data == "good" :
 				
 				ocr_status.data = "trigger_off"
 				ocr_publisher.publish(ocr_status)
@@ -341,7 +390,9 @@ if __name__ == '__main__':
 				
 				trial = 1
 
-				start = main()
+				# start = main()
+				scanner()
+				
 				print 
 				print "over!! :)"
 				print
@@ -355,7 +406,10 @@ if __name__ == '__main__':
 				else :
 					trial = 2
 					print("again")
-					again = main()
+					
+					# again = main()
+					scanner()
+
 					if (int(floor) > 1) & (int(room) > 1) :
 						ocr_status.data = "good"
 						print("ocr succeed!")
